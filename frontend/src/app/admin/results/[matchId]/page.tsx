@@ -885,8 +885,6 @@ function SubstitutionList({
   const reserves = players.filter((p) => !assignedIds.includes(p.id));
   const starters = players.filter((p) => assignedIds.includes(p.id));
 
-  if (reserves.length === 0) return null;
-
   // All players already used in subs (in or out)
   const usedOutIds = new Set(subs.map((s) => s.outId).filter(Boolean));
   const usedInIds = new Set(subs.map((s) => s.inId).filter(Boolean));
@@ -940,7 +938,9 @@ function SubstitutionList({
                 className="flex-1 rounded border border-card-border bg-background px-3 py-1.5 text-sm outline-none focus:border-accent"
               >
                 <option value="">— Izaberi —</option>
-                {reserves.map((p) => (
+                {players
+                  .filter((p) => p.id !== sub.outId)
+                  .map((p) => (
                   <option
                     key={p.id}
                     value={p.id}
