@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TT Liga — Dizajn opcije</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; color: #fff; }
+
+  .selector {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; gap: 12px; padding: 16px 24px;
+    background: rgba(17,17,17,0.95); backdrop-filter: blur(10px);
+    border-bottom: 1px solid #333;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .selector h3 { margin-right: 12px; font-size: 14px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+  .selector button {
+    padding: 10px 20px; border: 2px solid #333; border-radius: 8px;
+    background: transparent; color: #ccc; cursor: pointer; font-size: 14px; font-weight: 600;
+    transition: all 0.3s;
+  }
+  .selector button:hover { border-color: #666; color: #fff; }
+  .selector button.active { border-color: var(--btn-accent); color: var(--btn-accent); background: rgba(255,255,255,0.05); }
+
+  .theme { display: none; min-height: 100vh; padding: 40px 20px; }
+  .theme.active { display: block; }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; border-radius: 12px; margin-bottom: 32px;
+  }
+  .header .logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .header nav { display: flex; gap: 24px; font-size: 14px; font-weight: 500; }
+  .header nav a { text-decoration: none; opacity: 0.7; transition: opacity 0.2s; }
+  .header nav a:hover { opacity: 1; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 48px 20px 40px; margin-bottom: 32px; }
+  .hero .badge {
+    display: inline-block; padding: 6px 16px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+  .hero h1 { font-size: 36px; font-weight: 800; line-height: 1.2; margin-bottom: 8px; }
+  .hero .subtitle { font-size: 16px; opacity: 0.6; margin-bottom: 4px; }
+  .hero .location { font-size: 13px; opacity: 0.4; }
+
+  /* Standings table */
+  .section-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .standings-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border-radius: 12px; overflow: hidden; margin-bottom: 32px;
+  }
+  .standings-table th {
+    padding: 12px 16px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; text-align: left;
+  }
+  .standings-table td { padding: 12px 16px; font-size: 14px; }
+  .standings-table tr { transition: background 0.2s; }
+  .standings-table tbody tr:hover { filter: brightness(1.2); }
+  .standings-table .rank { font-weight: 700; width: 40px; text-align: center; }
+  .standings-table .team-name { font-weight: 600; }
+  .standings-table .stat { text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* Match cards */
+  .matches-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .match-card {
+    padding: 20px; border-radius: 12px; transition: transform 0.2s;
+  }
+  .match-card:hover { transform: translateY(-2px); }
+  .match-card .round-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .match-card .teams-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .match-card .team { font-weight: 600; font-size: 16px; flex: 1; }
+  .match-card .team.right { text-align: right; }
+  .match-card .score {
+    font-size: 24px; font-weight: 800; padding: 4px 16px;
+    border-radius: 8px; letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .match-card .details { font-size: 12px; margin-top: 10px; opacity: 0.5; }
+  .match-card .bye { font-size: 13px; opacity: 0.5; font-style: italic; }
+
+  /* Game details */
+  .game-detail {
+    padding: 20px; border-radius: 12px; margin-bottom: 32px;
+  }
+  .game-row {
+    display: flex; align-items: center; padding: 10px 0;
+    font-size: 14px;
+  }
+  .game-row + .game-row { border-top: 1px solid rgba(255,255,255,0.05); }
+  .game-row .gnum { width: 30px; font-weight: 700; opacity: 0.4; font-size: 12px; }
+  .game-row .player { flex: 1; font-weight: 500; }
+  .game-row .player.right { text-align: right; }
+  .game-row .designation { font-size: 11px; font-weight: 700; opacity: 0.4; margin: 0 4px; }
+  .game-row .sets {
+    padding: 4px 12px; border-radius: 6px; font-weight: 700;
+    font-variant-numeric: tabular-nums; min-width: 50px; text-align: center;
+  }
+  .game-row .set-details { font-size: 12px; opacity: 0.4; margin-left: 8px; }
+  .game-row.winner .player { opacity: 1; }
+  .game-row.loser .player { opacity: 0.4; }
+
+  /* ═══════════════════════════════════════════════
+     THEME A: Dark + Orange/Gold
+     ═══════════════════════════════════════════════ */
+  .theme-a { background: #0f1419; color: #e7e9ea; }
+  .theme-a .header { background: #1a1f2e; border: 1px solid #2a3040; }
+  .theme-a .header nav a { color: #e7e9ea; }
+  .theme-a .hero .badge { background: rgba(245,158,11,0.15); color: #f59e0b; }
+  .theme-a .hero h1 { color: #e7e9ea; }
+  .theme-a .hero h1 .accent { color: #f59e0b; }
+  .theme-a .section-title .dot { background: #f59e0b; }
+  .theme-a .standings-table th { background: #1a1f2e; color: #71767b; border-bottom: 2px solid #f59e0b; }
+  .theme-a .standings-table td { background: #141920; border-bottom: 1px solid #1e2430; }
+  .theme-a .standings-table .rank { color: #f59e0b; }
+  .theme-a .standings-table tbody tr:nth-child(-n+3) .rank {
+    background: rgba(245,158,11,0.1); border-radius: 6px;
+  }
+  .theme-a .match-card { background: #1a1f2e; border: 1px solid #2a3040; }
+  .theme-a .match-card .round-label { color: #f59e0b; }
+  .theme-a .match-card .score { background: rgba(245,158,11,0.1); color: #fbbf24; }
+  .theme-a .game-detail { background: #1a1f2e; border: 1px solid #2a3040; }
+  .theme-a .game-row .sets { background: rgba(245,158,11,0.1); color: #fbbf24; }
+  .theme-a .game-row.winner .sets { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+  /* ═══════════════════════════════════════════════
+     THEME B: Dark + Blue
+     ═══════════════════════════════════════════════ */
+  .theme-b { background: #0a0e1a; color: #e2e8f0; }
+  .theme-b .header { background: #111827; border: 1px solid #1e293b; }
+  .theme-b .header nav a { color: #e2e8f0; }
+  .theme-b .hero .badge { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .theme-b .hero h1 { color: #f1f5f9; }
+  .theme-b .hero h1 .accent { color: #3b82f6; }
+  .theme-b .section-title .dot { background: #3b82f6; }
+  .theme-b .standings-table th { background: #111827; color: #64748b; border-bottom: 2px solid #3b82f6; }
+  .theme-b .standings-table td { background: #0d1220; border-bottom: 1px solid #1a2332; }
+  .theme-b .standings-table .rank { color: #60a5fa; }
+  .theme-b .standings-table tbody tr:nth-child(-n+3) .rank {
+    background: rgba(59,130,246,0.1); border-radius: 6px;
+  }
+  .theme-b .match-card { background: #111827; border: 1px solid #1e293b; }
+  .theme-b .match-card .round-label { color: #60a5fa; }
+  .theme-b .match-card .score { background: rgba(59,130,246,0.1); color: #93bbfd; }
+  .theme-b .game-detail { background: #111827; border: 1px solid #1e293b; }
+  .theme-b .game-row .sets { background: rgba(59,130,246,0.1); color: #93bbfd; }
+  .theme-b .game-row.winner .sets { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+  /* ═══════════════════════════════════════════════
+     THEME C: Light + Green
+     ═══════════════════════════════════════════════ */
+  .theme-c { background: #f1f5f9; color: #1e293b; }
+  .theme-c .header { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .theme-c .header nav a { color: #475569; }
+  .theme-c .hero .badge { background: rgba(22,163,74,0.1); color: #16a34a; }
+  .theme-c .hero h1 { color: #0f172a; }
+  .theme-c .hero h1 .accent { color: #16a34a; }
+  .theme-c .hero .subtitle { color: #475569; }
+  .theme-c .hero .location { color: #94a3b8; }
+  .theme-c .section-title { color: #0f172a; }
+  .theme-c .section-title .dot { background: #16a34a; }
+  .theme-c .standings-table th { background: #ffffff; color: #64748b; border-bottom: 2px solid #16a34a; }
+  .theme-c .standings-table td { background: #ffffff; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  .theme-c .standings-table .rank { color: #16a34a; }
+  .theme-c .standings-table .team-name { color: #0f172a; }
+  .theme-c .standings-table tbody tr:nth-child(-n+3) .rank {
+    background: rgba(22,163,74,0.08); border-radius: 6px;
+  }
+  .theme-c .standings-table tbody tr:hover { background: #f8fafc; filter: none; }
+  .theme-c .match-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .theme-c .match-card .round-label { color: #16a34a; }
+  .theme-c .match-card .score { background: rgba(22,163,74,0.08); color: #15803d; }
+  .theme-c .match-card .team { color: #0f172a; }
+  .theme-c .game-detail { background: #ffffff; border: 1px solid #e2e8f0; }
+  .theme-c .game-row + .game-row { border-top: 1px solid #f1f5f9; }
+  .theme-c .game-row .sets { background: rgba(22,163,74,0.08); color: #15803d; }
+  .theme-c .game-row.winner .sets { background: rgba(22,163,74,0.15); color: #16a34a; }
+  .theme-c .game-row .player { color: #334155; }
+  .theme-c .game-row.winner .player { color: #0f172a; }
+
+  /* ═══════════════════════════════════════════════
+     THEME D: Dark + Red/Crimson
+     ═══════════════════════════════════════════════ */
+  .theme-d { background: #100a0a; color: #ede7e7; }
+  .theme-d .header { background: #1c1414; border: 1px solid #2e2020; }
+  .theme-d .header nav a { color: #ede7e7; }
+  .theme-d .hero .badge { background: rgba(220,38,38,0.15); color: #f87171; }
+  .theme-d .hero h1 { color: #f5f0f0; }
+  .theme-d .hero h1 .accent { color: #dc2626; }
+  .theme-d .section-title .dot { background: #dc2626; }
+  .theme-d .standings-table th { background: #1c1414; color: #8a7575; border-bottom: 2px solid #dc2626; }
+  .theme-d .standings-table td { background: #140e0e; border-bottom: 1px solid #221818; }
+  .theme-d .standings-table .rank { color: #f87171; }
+  .theme-d .standings-table tbody tr:nth-child(-n+3) .rank {
+    background: rgba(220,38,38,0.1); border-radius: 6px;
+  }
+  .theme-d .match-card { background: #1c1414; border: 1px solid #2e2020; }
+  .theme-d .match-card .round-label { color: #f87171; }
+  .theme-d .match-card .score { background: rgba(220,38,38,0.1); color: #fca5a5; }
+  .theme-d .game-detail { background: #1c1414; border: 1px solid #2e2020; }
+  .theme-d .game-row .sets { background: rgba(220,38,38,0.1); color: #fca5a5; }
+  .theme-d .game-row.winner .sets { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+  @media (max-width: 600px) {
+    .matches-grid { grid-template-columns: 1fr; }
+    .header nav { display: none; }
+    .hero h1 { font-size: 26px; }
+    .standings-table { font-size: 13px; }
+    .standings-table th, .standings-table td { padding: 8px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="selector">
+  <h3>Izaberi temu:</h3>
+  <button class="active" onclick="setTheme('a')" style="--btn-accent: #f59e0b;">A) Tamno + Zlatna</button>
+  <button onclick="setTheme('b')" style="--btn-accent: #3b82f6;">B) Tamno + Plava</button>
+  <button onclick="setTheme('c')" style="--btn-accent: #16a34a;">C) Svetlo + Zelena</button>
+  <button onclick="setTheme('d')" style="--btn-accent: #dc2626;">D) Tamno + Crvena</button>
+</div>
+
+<!-- THEME A -->
+<div class="theme theme-a active" id="theme-a">
+<div class="container">
+  <div class="header">
+    <div class="logo">TT Liga</div>
+    <nav>
+      <a href="#">Tabela</a>
+      <a href="#">Raspored</a>
+      <a href="#">Timovi</a>
+      <a href="#">Rezultati</a>
+    </nav>
+  </div>
+
+  <div class="hero">
+    <div class="badge">Prolece 2026</div>
+    <h1>Medjuopstinska <span class="accent">Liga</span></h1>
+    <div class="subtitle">Novi Pazar &bull; Sjenica &bull; Tutin</div>
+    <div class="location">STA Tutic &bull; 9 timova &bull; 9 kola</div>
+  </div>
+
+  <div class="section-title"><div class="dot"></div> Tabela</div>
+  <table class="standings-table">
+    <thead><tr>
+      <th class="rank">#</th><th>Tim</th><th class="stat">O</th><th class="stat">W</th><th class="stat">L</th><th class="stat">Bod</th><th class="stat">S+</th><th class="stat">S-</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="rank">1</td><td class="team-name">STK Metalux</td><td class="stat">2</td><td class="stat">2</td><td class="stat">0</td><td class="stat">4</td><td class="stat">8</td><td class="stat">3</td></tr>
+      <tr><td class="rank">2</td><td class="team-name">STK Panteri</td><td class="stat">2</td><td class="stat">2</td><td class="stat">0</td><td class="stat">4</td><td class="stat">7</td><td class="stat">4</td></tr>
+      <tr><td class="rank">3</td><td class="team-name">STK Cukovac</td><td class="stat">2</td><td class="stat">1</td><td class="stat">1</td><td class="stat">2</td><td class="stat">6</td><td class="stat">5</td></tr>
+      <tr><td class="rank">4</td><td class="team-name">STK Stari Ras</td><td class="stat">1</td><td class="stat">1</td><td class="stat">0</td><td class="stat">2</td><td class="stat">4</td><td class="stat">2</td></tr>
+      <tr><td class="rank">5</td><td class="team-name">STK PZ Spin</td><td class="stat">2</td><td class="stat">1</td><td class="stat">1</td><td class="stat">2</td><td class="stat">5</td><td class="stat">6</td></tr>
+      <tr><td class="rank">6</td><td class="team-name">STK Has Pazarci</td><td class="stat">2</td><td class="stat">0</td><td class="stat">2</td><td class="stat">0</td><td class="stat">3</td><td class="stat">8</td></tr>
+      <tr><td class="rank">7</td><td class="team-name">STK Pacijenti</td><td class="stat">2</td><td class="stat">0</td><td class="stat">2</td><td class="stat">0</td><td class="stat">2</td><td class="stat">7</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title"><div class="dot"></div> 2. Kolo</div>
+  <div class="matches-grid">
+    <div class="match-card">
+      <div class="round-label">2. Kolo</div>
+      <div class="teams-row">
+        <div class="team">STK PZ Spin</div>
+        <div class="score">2 : 4</div>
+        <div class="team right">STK Metalux</div>
+      </div>
+      <div class="details">Zavrsen &bull; 6 singlova</div>
+    </div>
+    <div class="match-card">
+      <div class="round-label">2. Kolo</div>
+      <div class="teams-row">
+        <div class="team">STK Panteri</div>
+        <div class="score">4 : 1</div>
+        <div class="team right">STK Metalux</div>
+      </div>
+      <div class="details">Zavrsen &bull; 5 singlova</div>
+    </div>
+    <div class="match-card">
+      <div class="round-label">2. Kolo</div>
+      <div class="teams-row">
+        <div class="team">STK Cukovac</div>
+        <div class="score">4 : 2</div>
+        <div class="team right">STK Duga Poljana</div>
+      </div>
+      <div class="details">Zavrsen &bull; 6 singlova</div>
+    </div>
+    <div class="match-card">
+      <div class="round-label">2. Kolo</div>
+      <div class="teams-row">
+        <div class="team">STK Stari Ras</div>
+        <div class="score">4 : 0</div>
+        <div class="team right">STK Has Pazarci</div>
+      </div>
+      <div class="details">Zavrsen &bull; 4 singla</div>
+    </div>
+  </div>
+
+  <div class="section-title"><div class="dot"></div> Detalji meca: PZ Spin vs Metalux</div>
+  <div class="game-detail">
+    <div class="game-row loser">
+      <div class="gnum">1</div>
+      <div class="designation">A</div>
+      <div class="player">Zinedin</div>
+      <div class="sets">0 : 3</div>
+      <div class="player right">Tutic</div>
+      <div class="designation">Y</div>
+    </div>
+    <div class="game-row loser">
+      <div class="gnum">2</div>
+      <div class="designation">B</div>
+      <div class="player">Ahmed</div>
+      <div class="sets">1 : 3</div>
+      <div class="player right">Idrizovic</div>
+      <div class="designation">X</div>
+    </div>
+    <div class="game-row winner">
+      <div class="gnum">3</div>
+      <div class="designation">C</div>
+      <div class="player">Mesud</div>
+      <div class="sets">3 : 0</div>
+      <div class="player right">Agusevic</div>
+      <div class="designation">Z</div>
+    </div>
+    <div class="game-row winner">
+      <div class="gnum">4</div>
+      <div class="designation">A</div>
+      <div class="player">Zinedin</div>
+      <div class="sets">3 : 0</div>
+      <div class="player right">Idrizovic</div>
+      <div class="designation">X</div>
+      <div class="set-details">11:7, 11:5, 11:6</div>
+    </div>
+    <div class="game-row loser">
+      <div class="gnum">5</div>
+      <div class="designation">B</div>
+      <div class="player">Ahmed</div>
+      <div class="sets">0 : 3</div>
+      <div class="player right">Agusevic</div>
+      <div class="designation">Z</div>
+    </div>
+    <div class="game-row loser">
+      <div class="gnum">6</div>
+      <div class="designation">C</div>
+      <div class="player">Mesud</div>
+      <div class="sets">1 : 3</div>
+      <div class="player right">Tutic</div>
+      <div class="designation">Y</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Clone for other themes -->
+<div class="theme theme-b" id="theme-b"></div>
+<div class="theme theme-c" id="theme-c"></div>
+<div class="theme theme-d" id="theme-d"></div>
+
+<script>
+  // Clone content to all themes
+  const content = document.querySelector('#theme-a .container').innerHTML;
+  document.querySelector('#theme-b').innerHTML = '<div class="container">' + content + '</div>';
+  document.querySelector('#theme-c').innerHTML = '<div class="container">' + content + '</div>';
+  document.querySelector('#theme-d').innerHTML = '<div class="container">' + content + '</div>';
+
+  function setTheme(id) {
+    document.querySelectorAll('.theme').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.selector button').forEach(b => b.classList.remove('active'));
+    document.getElementById('theme-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>
