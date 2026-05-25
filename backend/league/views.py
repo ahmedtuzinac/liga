@@ -81,15 +81,66 @@ def standings(request):
             }
         )
 
-    # Sort by: points desc, singles diff desc, sets diff desc
-    standings_data.sort(
-        key=lambda x: (
-            x["points"],
-            x["singles_won"] - x["singles_lost"],
-            x["sets_won"] - x["sets_lost"],
-        ),
-        reverse=True,
-    )
+    # Sort by: points desc, then head-to-head (recursive), then singles diff, sets diff
+    from collections import defaultdict
+
+    def _h2h_points(team_id, group_ids):
+        """Points from matches only against teams in group_ids."""
+        pts = 0
+        other_ids = [t for t in group_ids if t != team_id]
+        for m in Match.objects.filter(
+            Q(home_team_id=team_id, away_team_id__in=other_ids)
+            | Q(away_team_id=team_id, home_team_id__in=other_ids),
+            is_completed=True,
+        ):
+            if m.home_team_id == team_id and m.home_score > m.away_score:
+                pts += 2
+            elif m.away_team_id == team_id and m.away_score > m.home_score:
+                pts += 2
+        return pts
+
+    def _resolve_group(entries):
+        """Recursively resolve a group of tied teams using h2h."""
+        if len(entries) <= 1:
+            return entries
+
+        ids = [e["team_id"] for e in entries]
+        for e in entries:
+            e["_h2h"] = _h2h_points(e["team_id"], ids)
+
+        # Sub-group by h2h points
+        h2h_groups = defaultdict(list)
+        for e in entries:
+            h2h_groups[e["_h2h"]].append(e)
+
+        result = []
+        for _h2h_val in sorted(h2h_groups.keys(), reverse=True):
+            sub = h2h_groups[_h2h_val]
+            if len(sub) == 1:
+                result.extend(sub)
+            elif len(sub) == len(entries):
+                # h2h didn't break the tie — fall back to singles/sets diff
+                sub.sort(
+                    key=lambda x: (
+                        x["singles_won"] - x["singles_lost"],
+                        x["sets_won"] - x["sets_lost"],
+                    ),
+                    reverse=True,
+                )
+                result.extend(sub)
+            else:
+                # Smaller sub-group — recurse with narrower h2h
+                result.extend(_resolve_group(sub))
+        return result
+
+    # Group by points, then resolve each group
+    points_groups = defaultdict(list)
+    for entry in standings_data:
+        points_groups[entry["points"]].append(entry)
+
+    standings_data = []
+    for pts in sorted(points_groups.keys(), reverse=True):
+        standings_data.extend(_resolve_group(points_groups[pts]))
 
     serializer = StandingsSerializer(standings_data, many=True)
     return Response(serializer.data)
