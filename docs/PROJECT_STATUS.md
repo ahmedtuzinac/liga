@@ -4,73 +4,94 @@
 Online results platform for the Inter-Municipal Table Tennis League (Novi Pazar, Sjenica, Tutin).
 Held at STA Tutić academy. Spring 2026, first half-season.
 
+**Live**: https://medjuopstinskaliga.nyvark.com/
+
 ## Tech Stack
 - **Backend**: Django 6.0.5 + Django REST Framework 3.17
 - **Frontend**: Next.js 16.2.6 + Tailwind CSS 4
-- **Database**: SQLite (dev), Supabase PostgreSQL (prod)
-- **Design**: Dark theme + Gold/Orange accent (Theme A)
+- **Database**: PostgreSQL 16 (Docker, both dev and prod)
+- **Deployment**: Docker Compose (db, backend, frontend, nginx)
+- **Design**: Dark theme + Gold/Orange accent (#f59e0b)
 
 ## Project Structure
 ```
 projects/tt-liga/
-├── assets/                     # Images, screenshots, design previews
 ├── backend/                    # Django API
 │   ├── config/                 # Django settings, urls
-│   ├── league/                 # Main app (models, views, serializers, admin)
+│   ├── league/                 # Main app
 │   │   ├── models.py           # Team, Player, Round, Match, Game, SetScore, ByeRound
 │   │   ├── views.py            # Public + Admin API endpoints
 │   │   ├── serializers.py      # DRF serializers
 │   │   ├── urls.py             # API routes
 │   │   ├── admin.py            # Django admin config
 │   │   └── management/commands/seed_data.py
-│   ├── db.sqlite3
+│   ├── Dockerfile
 │   └── manage.py
 ├── frontend/                   # Next.js
 │   ├── src/
-│   │   ├── app/                # Pages (home, standings, schedule, rounds, matches, teams)
-│   │   ├── components/         # Header, Footer, StandingsTable, MatchCard
-│   │   └── lib/                # api.ts (API client), types.ts
+│   │   ├── app/                # Pages (public + admin)
+│   │   ├── components/         # UI components
+│   │   └── lib/                # api.ts, types.ts
+│   ├── Dockerfile
 │   └── package.json
-├── venv/                       # Python virtual environment
-├── requirements.txt
+├── nginx/default.conf          # Reverse proxy config
+├── docker-compose.yml
 └── docs/
 ```
 
 ## Running Locally
 
-### Backend (Django API)
+### Docker (recommended)
 ```bash
 cd projects/tt-liga
-source venv/bin/activate
-cd backend
-python manage.py runserver 8000
+docker compose up -d
 ```
-- API: http://localhost:8000/api/
-- Django Admin: http://localhost:8000/admin/ (user: admin, pass: admin123)
+- Site: http://localhost (port 80)
+- API: http://localhost/api/
+- Django Admin: http://localhost/django-admin/
 
-### Frontend (Next.js)
+### Manual (dev)
 ```bash
+# Backend
+cd projects/tt-liga && source venv/bin/activate && cd backend
+python manage.py runserver 8000
+
+# Frontend
 cd projects/tt-liga/frontend
 npm run dev -- -p 3003
 ```
-- Site: http://localhost:3003
+
+## Deployment (Production)
+Server: Hetzner VPS (4 vCPU, 3.8 GB RAM, AMD EPYC)
+```bash
+ssh medjuopstinskaliga.nyvark.com
+cd ~/liga && git pull && docker compose up -d --build
+```
 
 ## API Endpoints
 
 ### Public
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/standings/ | League standings table |
+| GET | /api/standings/ | League standings (sorted by points, h2h, singles diff, sets diff) |
+| GET | /api/player-standings/ | Individual player rankings (win %, wins, sets) |
+| GET | /api/players/{id}/ | Player profile with game history |
 | GET | /api/rounds/ | All rounds (summary) |
 | GET | /api/rounds/{number}/ | Round detail with matches |
-| GET | /api/matches/{id}/ | Match detail with games and sets |
+| GET | /api/matches/{id}/ | Match detail with games and set scores |
 | GET | /api/teams/ | All teams |
 | GET | /api/teams/{id}/ | Team detail with players and match history |
 
-### Admin (auth required)
+### Admin (token auth required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /api/admin/matches/{id}/result/ | Submit match result |
+| POST | /api/admin/login/ | Login, returns token |
+| GET | /api/admin/me/ | Current user info |
+| GET | /api/admin/rounds/ | Rounds with matches for admin |
+| GET | /api/admin/matches/{id}/ | Match detail + both teams' players |
+| POST | /api/admin/matches/{id}/result/ | Submit/edit match result |
+| POST | /api/admin/players/ | Add player to team |
+| DELETE | /api/admin/players/{id}/ | Delete player |
 
 ## Database Models
 - **Team**: name, full_name, city
@@ -78,52 +99,56 @@ npm run dev -- -p 3003
 - **Round**: round_number, date
 - **Match**: round (FK), home_team, away_team, home_score, away_score, is_completed
 - **ByeRound**: round (FK), team (FK) — team that rests
-- **Game**: match (FK), game_number, home/away player, designation (A/B/C vs X/Y/Z), sets_won, is_doubles
+- **Game**: match (FK), game_number, home/away player, home/away player_2 (doubles), designation (A/B/C vs X/Y/Z), sets_won, is_doubles
 - **SetScore**: game (FK), set_number, home_points, away_points
 
-## Seeded Data
-- 9 teams: STK Stari Ras, PZ Spin, Metalux, Panteri, Has Pazarci, Cukovac, Tutin, Pacijenti, Duga Poljana
-- 9 rounds with 4 matches each + bye team per round
-- No players or results yet
-
 ## Match Format
-- 6 singles: A-Y, B-X, C-Z, A-X, B-Z, C-Y
+- 6 singles: A-Y, B-X, C-Z, A-X, C-Y, B-Z
 - Each single: best of 5 sets
-- First team to 4 wins = match winner
-- If 3:3 after 6 singles → doubles (deciding)
+- First team to 4 wins = match winner (match can end before 6th single)
+- If 3:3 after 6 singles → doubles (deciding, 2 players per side)
 - Scoring: Win = 2 points, Loss = 0
+
+## Standings Tiebreaker Rules
+1. **Points** (wins × 2)
+2. **Head-to-head** among tied teams (recursive — if sub-group still tied, narrows to direct match)
+3. **Singles difference** (singles won − singles lost)
+4. **Sets difference** (sets won − sets lost)
+
+## Current Data (as of 2026-05-25)
+- 9 teams, 45 players
+- 34/36 matches completed (2 remaining: Round 7 and 8)
+- 195 games, 695 set scores
 
 ## Frontend Pages
 | Route | Status | Description |
 |-------|--------|-------------|
-| / | ✅ Done | Home — standings + current round |
-| /standings | ✅ Done | Full standings table |
-| /schedule | ✅ Done | All 9 rounds with matches |
-| /rounds/[number] | ✅ Done | Single round detail |
-| /matches/[id] | ✅ Done | Match detail with games |
-| /teams | ✅ Done | Team cards grid |
-| /teams/[id] | ✅ Done | Team profile (players + history) |
-| /admin | ❌ TODO | Admin dashboard |
-| /admin/login | ❌ TODO | Admin login |
-| /admin/results/[matchId] | ❌ TODO | Result entry form |
-| /admin/teams | ❌ TODO | Manage teams/players |
+| / | ✅ | Home — standings + current round |
+| /standings | ✅ | Standings with team + player tabs |
+| /schedule | ✅ | All 9 rounds (auto-scrolls to next incomplete) |
+| /rounds/[number] | ✅ | Single round detail |
+| /matches/[id] | ✅ | Match detail with games, sets, substitution labels |
+| /teams | ✅ | Team cards grid |
+| /teams/[id] | ✅ | Team profile with player links + match history |
+| /players/[id] | ✅ | Player profile with stats + game history |
+| /admin | ✅ | Admin dashboard |
+| /admin/login | ✅ | Admin login |
+| /admin/results/[matchId] | ✅ | Result entry/edit form |
+| /admin/teams | ✅ | Manage teams/players |
 
-## What's Done
-- [x] Django project + models + migrations
-- [x] Seed data (9 teams, 9 rounds, 36 matches, bye teams)
-- [x] Django REST API (public endpoints)
-- [x] Django admin (built-in)
-- [x] Admin result submission endpoint
-- [x] Next.js project + Tailwind setup
-- [x] Dark + Gold design system
-- [x] All public pages (home, standings, schedule, rounds, matches, teams)
-- [x] API client + TypeScript types
-- [x] Responsive layout
-
-## What's Next (Priority Order)
-1. **Admin panel** — Login + result entry form (most important feature)
-2. **Add players** — Need player data for all 9 teams
-3. **Enter results** — 1st and 2nd round results already played
-4. **Deploy** — Backend to Railway/Render, Frontend to Vercel
-5. **Connect domain** — TBD
-6. **Mobile polish** — Test on phones (primary use case)
+## Key Features
+- [x] Full public pages with responsive dark + gold design
+- [x] Admin panel with token auth
+- [x] Result entry form with player assignment (A/B/C vs Y/X/Z)
+- [x] Dynamic game count (hides games after team reaches 4 wins)
+- [x] Multiple substitutions per team with timing (after game N)
+- [x] Substitution form allows selecting any team player
+- [x] Doubles support (2 players per side, auto-appears at 3:3)
+- [x] Edit mode for submitted results (pre-fills form)
+- [x] Player standings tab with win percentage ranking
+- [x] Player profile pages with game history
+- [x] Substitution detection and labels on public match page
+- [x] Auto-scroll to next game day on schedule page
+- [x] Head-to-head tiebreaker in standings
+- [x] Docker Compose deployment (db, backend, frontend, nginx)
+- [x] Production deploy on Hetzner VPS
