@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import ByeRound, Game, Match, Player, Round, SetScore, Team
+from .models import ByeRound, Game, Match, Player, Round, Season, SetScore, Team
+
+
+@admin.register(Season)
+class SeasonAdmin(admin.ModelAdmin):
+    list_display = ["name", "slug", "is_active"]
+    prepopulated_fields = {"slug": ["name"]}
 
 
 class PlayerInline(admin.TabularInline):
@@ -10,14 +16,15 @@ class PlayerInline(admin.TabularInline):
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ["full_name", "city"]
+    list_display = ["full_name", "city", "season"]
+    list_filter = ["season"]
     inlines = [PlayerInline]
 
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ["name", "team"]
-    list_filter = ["team"]
+    list_filter = ["team__season", "team"]
 
 
 class MatchInline(admin.TabularInline):
@@ -32,7 +39,8 @@ class ByeRoundInline(admin.StackedInline):
 
 @admin.register(Round)
 class RoundAdmin(admin.ModelAdmin):
-    list_display = ["round_number", "date"]
+    list_display = ["round_number", "date", "season"]
+    list_filter = ["season"]
     inlines = [MatchInline, ByeRoundInline]
 
 
@@ -44,7 +52,7 @@ class GameInline(admin.TabularInline):
 @admin.register(Match)
 class MatchAdmin(admin.ModelAdmin):
     list_display = ["__str__", "round", "is_completed"]
-    list_filter = ["round", "is_completed"]
+    list_filter = ["round__season", "is_completed"]
     inlines = [GameInline]
 
 

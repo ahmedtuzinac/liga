@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { getCurrentSeason } from "@/lib/season";
 import MatchCard from "@/components/ui/MatchCard";
 
 export default async function RoundPage({
@@ -7,7 +8,8 @@ export default async function RoundPage({
   params: Promise<{ number: string }>;
 }) {
   const { number } = await params;
-  const round = await api.getRound(parseInt(number));
+  const { current } = await getCurrentSeason();
+  const round = await api.getRound(parseInt(number), current?.slug);
 
   return (
     <div>

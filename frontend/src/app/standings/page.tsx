@@ -1,10 +1,12 @@
 import { api } from "@/lib/api";
+import { getCurrentSeason } from "@/lib/season";
 import StandingsTabs from "@/components/ui/StandingsTabs";
 
 export default async function StandingsPage() {
+  const { current } = await getCurrentSeason();
   const [teamStandings, playerStandings] = await Promise.all([
-    api.getStandings(),
-    api.getPlayerStandings(),
+    api.getStandings(current?.slug),
+    api.getPlayerStandings(current?.slug),
   ]);
 
   return (

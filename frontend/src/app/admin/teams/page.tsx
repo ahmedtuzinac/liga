@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { adminApi } from "@/lib/admin-api";
+import { getSeasonCookie, seasonQuery } from "@/lib/season-cookie";
 import type { Team } from "@/lib/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
@@ -14,7 +15,7 @@ export default function AdminTeamsPage() {
   );
 
   async function fetchTeams() {
-    const res = await fetch(`${API_BASE}/teams/`);
+    const res = await fetch(`${API_BASE}/teams/${seasonQuery(getSeasonCookie())}`);
     const data = await res.json();
     // Fetch full details for each team to get players
     const detailed = await Promise.all(

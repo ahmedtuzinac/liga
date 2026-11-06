@@ -1,12 +1,14 @@
 import { api } from "@/lib/api";
 import StandingsTable from "@/components/ui/StandingsTable";
 import MatchCard from "@/components/ui/MatchCard";
+import { getCurrentSeason } from "@/lib/season";
 import Link from "next/link";
 
 export default async function HomePage() {
+  const { current } = await getCurrentSeason();
   const [standings, rounds] = await Promise.all([
-    api.getStandings(),
-    api.getRounds(),
+    api.getStandings(current?.slug),
+    api.getRounds(current?.slug),
   ]);
 
   // Find current round (first round with incomplete matches, or last round)
@@ -16,7 +18,7 @@ export default async function HomePage() {
 
   // Get full round data with matches
   const roundDetail = currentRound
-    ? await api.getRound(currentRound.round_number)
+    ? await api.getRound(currentRound.round_number, current?.slug)
     : null;
 
   return (
@@ -24,7 +26,7 @@ export default async function HomePage() {
       {/* Hero */}
       <div className="mb-10 text-center">
         <span className="inline-block rounded-full bg-accent/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
-          Prolece 2026
+          Sezona {current?.name}
         </span>
         <h1 className="mt-4 text-4xl font-extrabold tracking-tight md:text-5xl">
           Medjuopstinska{" "}
@@ -33,9 +35,11 @@ export default async function HomePage() {
         <p className="mt-2 text-muted">
           Novi Pazar &bull; Sjenica &bull; Tutin
         </p>
-        <p className="mt-1 text-xs text-muted/60">
-          STA Tutic &bull; 9 timova &bull; 9 kola
-        </p>
+        {standings.length > 0 && (
+          <p className="mt-1 text-xs text-muted/60">
+            STA Tutic &bull; {standings.length} timova &bull; {rounds.length} kola
+          </p>
+        )}
       </div>
 
       {/* Standings */}
@@ -52,7 +56,13 @@ export default async function HomePage() {
             Kompletna tabela &rarr;
           </Link>
         </div>
-        <StandingsTable standings={standings} />
+        {standings.length > 0 ? (
+          <StandingsTable standings={standings} />
+        ) : (
+          <p className="text-center text-muted">
+            Timovi za ovu sezonu jos nisu prijavljeni.
+          </p>
+        )}
       </section>
 
       {/* Current Round */}

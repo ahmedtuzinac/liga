@@ -1,14 +1,16 @@
 import { api } from "@/lib/api";
 import MatchCard from "@/components/ui/MatchCard";
 import ScrollToRound from "@/components/ui/ScrollToRound";
+import { getCurrentSeason } from "@/lib/season";
 import Link from "next/link";
 
 export default async function SchedulePage() {
-  const roundsList = await api.getRounds();
+  const { current } = await getCurrentSeason();
+  const roundsList = await api.getRounds(current?.slug);
 
   // Fetch full details for each round (includes matches)
   const rounds = await Promise.all(
-    roundsList.map((r) => api.getRound(r.round_number))
+    roundsList.map((r) => api.getRound(r.round_number, current?.slug))
   );
 
   // Find next game day: nearest date >= today, scroll to first round of that date
@@ -29,6 +31,11 @@ export default async function SchedulePage() {
         Raspored
       </h1>
       {nextRound && <ScrollToRound roundNumber={nextRound.round_number} />}
+      {rounds.length === 0 && (
+        <p className="text-center text-muted">
+          Raspored za sezonu {current?.name} jos nije objavljen.
+        </p>
+      )}
       <div className="space-y-8">
         {rounds.map((round) => (
           <section key={round.id} id={`round-${round.round_number}`}>

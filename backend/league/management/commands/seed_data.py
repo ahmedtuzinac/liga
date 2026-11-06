@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from league.models import ByeRound, Game, Match, Player, Round, SetScore, Team
+from league.models import ByeRound, Game, Match, Player, Round, Season, SetScore, Team
 
 
 TEAMS = [
@@ -191,11 +191,17 @@ class Command(BaseCommand):
     help = "Seed teams, players, schedule, and results for the league"
 
     def handle(self, *args, **options):
+        season, _ = Season.objects.get_or_create(
+            slug="2025-2026", defaults={"name": "2025/2026", "is_active": True}
+        )
+
         # Create teams
         team_map = {}
         for name, full_name, city in TEAMS:
             team, created = Team.objects.get_or_create(
-                name=name, defaults={"full_name": full_name, "city": city}
+                season=season,
+                name=name,
+                defaults={"full_name": full_name, "city": city},
             )
             team_map[name] = team
             self.stdout.write(f"  {'Created' if created else 'Exists'}: {full_name}")
@@ -216,6 +222,7 @@ class Command(BaseCommand):
         match_map = {}
         for round_number, entries in SCHEDULE.items():
             round_obj, _ = Round.objects.get_or_create(
+                season=season,
                 round_number=round_number,
                 defaults={"date": ROUND_DATES.get(round_number)},
             )

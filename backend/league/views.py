@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Game, Match, Player, Round, SetScore, Team
+from .models import Game, Match, Player, Round, Season, SetScore, Team
 from .serializers import (
     MatchDetailSerializer,
     MatchResultInputSerializer,
@@ -14,18 +14,40 @@ from .serializers import (
     PlayerSerializer,
     RoundListSerializer,
     RoundSerializer,
+    SeasonSerializer,
     StandingsSerializer,
     TeamListSerializer,
     TeamSerializer,
 )
 
 
+def _get_season(request):
+    """Season from ?season=<slug>, falling back to the active season."""
+    slug = request.query_params.get("season")
+    if slug:
+        return Season.objects.filter(slug=slug).first()
+    return Season.get_default()
+
+
+def _season_not_found():
+    return Response({"error": "Season not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
 # ─── Public endpoints ────────────────────────────────────────────
 
 
 @api_view(["GET"])
+def season_list(request):
+    serializer = SeasonSerializer(Season.objects.all(), many=True)
+    return Response(serializer.data)
+
+
+@api_view(["GET"])
 def standings(request):
-    teams = Team.objects.all()
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
+    teams = Team.objects.filter(season=season)
     standings_data = []
 
     for team in teams:
@@ -148,7 +170,10 @@ def standings(request):
 
 @api_view(["GET"])
 def player_standings(request):
-    players = Player.objects.select_related("team").all()
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
+    players = Player.objects.select_related("team").filter(team__season=season)
     data = []
 
     for player in players:
@@ -287,15 +312,21 @@ def player_detail(request, player_id):
 
 @api_view(["GET"])
 def round_list(request):
-    rounds = Round.objects.all()
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
+    rounds = Round.objects.filter(season=season)
     serializer = RoundListSerializer(rounds, many=True)
     return Response(serializer.data)
 
 
 @api_view(["GET"])
 def round_detail(request, round_number):
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
     try:
-        round_obj = Round.objects.get(round_number=round_number)
+        round_obj = Round.objects.get(season=season, round_number=round_number)
     except Round.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -316,7 +347,10 @@ def match_detail(request, match_id):
 
 @api_view(["GET"])
 def team_list(request):
-    teams = Team.objects.all()
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
+    teams = Team.objects.filter(season=season)
     serializer = TeamListSerializer(teams, many=True)
     return Response(serializer.data)
 
@@ -367,7 +401,10 @@ def admin_me(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def admin_rounds(request):
-    rounds = Round.objects.all()
+    season = _get_season(request)
+    if season is None:
+        return _season_not_found()
+    rounds = Round.objects.filter(season=season)
     data = []
     for r in rounds:
         matches = Match.objects.filter(round=r)

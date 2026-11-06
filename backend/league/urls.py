@@ -4,6 +4,7 @@ from . import views
 
 urlpatterns = [
     # Public
+    path("seasons/", views.season_list, name="season-list"),
     path("standings/", views.standings, name="standings"),
     path("standings/players/", views.player_standings, name="player-standings"),
     path("players/<int:player_id>/", views.player_detail, name="player-detail"),

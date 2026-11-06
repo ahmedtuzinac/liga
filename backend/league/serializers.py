@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from .models import ByeRound, Game, Match, Player, Round, SetScore, Team
+from .models import ByeRound, Game, Match, Player, Round, Season, SetScore, Team
+
+
+class SeasonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Season
+        fields = ["id", "name", "slug", "is_active"]
 
 
 class PlayerSerializer(serializers.ModelSerializer):
@@ -14,7 +20,7 @@ class TeamSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ["id", "name", "full_name", "city", "players"]
+        fields = ["id", "season", "name", "full_name", "city", "players"]
 
 
 class TeamListSerializer(serializers.ModelSerializer):
@@ -22,7 +28,7 @@ class TeamListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Team
-        fields = ["id", "name", "full_name", "city", "player_count"]
+        fields = ["id", "season", "name", "full_name", "city", "player_count"]
 
 
 class SetScoreSerializer(serializers.ModelSerializer):

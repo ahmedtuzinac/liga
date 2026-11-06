@@ -1,4 +1,5 @@
 import type { Match, Player } from "./types";
+import { getSeasonCookie, seasonQuery } from "./season-cookie";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -90,7 +91,8 @@ export const adminApi = {
 
   me: () => adminFetch<{ username: string }>("/admin/me/"),
 
-  getRounds: () => adminFetch<AdminRound[]>("/admin/rounds/"),
+  getRounds: () =>
+    adminFetch<AdminRound[]>(`/admin/rounds/${seasonQuery(getSeasonCookie())}`),
 
   getMatch: (id: number) =>
     adminFetch<AdminMatchDetail>(`/admin/matches/${id}/`),

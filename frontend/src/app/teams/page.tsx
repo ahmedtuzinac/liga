@@ -1,8 +1,10 @@
 import { api } from "@/lib/api";
+import { getCurrentSeason } from "@/lib/season";
 import Link from "next/link";
 
 export default async function TeamsPage() {
-  const teams = await api.getTeams();
+  const { current } = await getCurrentSeason();
+  const teams = await api.getTeams(current?.slug);
 
   return (
     <div>

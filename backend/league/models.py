@@ -1,7 +1,31 @@
 from django.db import models
 
 
+class Season(models.Model):
+    name = models.CharField(max_length=20, unique=True)  # e.g. "2025/2026"
+    slug = models.SlugField(max_length=20, unique=True)  # e.g. "2025-2026"
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-name"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Only one season can be active at a time
+        if self.is_active:
+            Season.objects.exclude(pk=self.pk).update(is_active=False)
+
+    @classmethod
+    def get_default(cls):
+        return cls.objects.filter(is_active=True).first() or cls.objects.first()
+
+
 class Team(models.Model):
+    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name="teams")
     name = models.CharField(max_length=100)
     full_name = models.CharField(max_length=200)
     city = models.CharField(max_length=100)
@@ -11,7 +35,7 @@ class Team(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return self.full_name
+        return f"{self.full_name} ({self.season})"
 
 
 class Player(models.Model):
@@ -27,12 +51,14 @@ class Player(models.Model):
 
 
 class Round(models.Model):
-    round_number = models.IntegerField(unique=True)
+    season = models.ForeignKey(Season, on_delete=models.CASCADE, related_name="rounds")
+    round_number = models.IntegerField()
     date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["round_number"]
+        ordering = ["season", "round_number"]
+        unique_together = ["season", "round_number"]
 
     def __str__(self):
         return f"Kolo {self.round_number}"

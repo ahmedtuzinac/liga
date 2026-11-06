@@ -1,4 +1,5 @@
-import type { Match, PlayerDetail, PlayerStanding, Round, Standing, Team } from "./types";
+import type { Match, PlayerDetail, PlayerStanding, Round, Season, Standing, Team } from "./types";
+import { seasonQuery } from "./season-cookie";
 
 // Server-side (SSR) uses internal Docker URL, client-side uses public URL
 const API_BASE =
@@ -13,12 +14,16 @@ async function fetchApi<T>(path: string): Promise<T> {
 }
 
 export const api = {
-  getStandings: () => fetchApi<Standing[]>("/standings/"),
-  getPlayerStandings: () => fetchApi<PlayerStanding[]>("/standings/players/"),
+  getSeasons: () => fetchApi<Season[]>("/seasons/"),
+  getStandings: (season?: string) =>
+    fetchApi<Standing[]>(`/standings/${seasonQuery(season)}`),
+  getPlayerStandings: (season?: string) =>
+    fetchApi<PlayerStanding[]>(`/standings/players/${seasonQuery(season)}`),
   getPlayer: (id: number) => fetchApi<PlayerDetail>(`/players/${id}/`),
-  getRounds: () => fetchApi<Round[]>("/rounds/"),
-  getRound: (number: number) => fetchApi<Round>(`/rounds/${number}/`),
+  getRounds: (season?: string) => fetchApi<Round[]>(`/rounds/${seasonQuery(season)}`),
+  getRound: (number: number, season?: string) =>
+    fetchApi<Round>(`/rounds/${number}/${seasonQuery(season)}`),
   getMatch: (id: number) => fetchApi<Match>(`/matches/${id}/`),
-  getTeams: () => fetchApi<Team[]>("/teams/"),
+  getTeams: (season?: string) => fetchApi<Team[]>(`/teams/${seasonQuery(season)}`),
   getTeam: (id: number) => fetchApi<Team & { matches: Match[] }>(`/teams/${id}/`),
 };

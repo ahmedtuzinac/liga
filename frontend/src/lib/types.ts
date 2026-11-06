@@ -1,5 +1,13 @@
+export interface Season {
+  id: number;
+  name: string;
+  slug: string;
+  is_active: boolean;
+}
+
 export interface Team {
   id: number;
+  season: number;
   name: string;
   full_name: string;
   city: string;

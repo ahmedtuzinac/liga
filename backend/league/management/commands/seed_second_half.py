@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from league.models import ByeRound, Match, Round, Team
+from league.models import ByeRound, Match, Round, Season, Team
 
 
 # First half schedule (rounds 1-9) - we reverse home/away for second half
@@ -88,7 +88,8 @@ class Command(BaseCommand):
     help = "Seed second half-season schedule (rounds 10-18) with reversed home/away"
 
     def handle(self, *args, **options):
-        team_map = {t.name: t for t in Team.objects.all()}
+        season = Season.objects.get(slug="2025-2026")
+        team_map = {t.name: t for t in Team.objects.filter(season=season)}
 
         for first_round_num in range(1, 10):
             second_round_num = first_round_num + 9
@@ -97,6 +98,7 @@ class Command(BaseCommand):
             matches = entries[:-1]
 
             round_obj, created = Round.objects.get_or_create(
+                season=season,
                 round_number=second_round_num,
                 defaults={"date": ROUND_DATES[second_round_num]},
             )
